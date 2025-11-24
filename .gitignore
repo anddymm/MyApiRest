@@ -1,0 +1,19 @@
+# Dependencias de Composer
+/vendor/
+
+# Archivos y carpetas temporales
+*.log
+/tmp/
+
+# Archivos de entorno (por si los usas)
+/.env
+.env.*
+
+# Archivos ocultos del sistema operativo/mac/win
+.DS_Store
+Thumbs.db
+
+# Archivos de configuración de editores comunes
+.idea/
+.vscode/
+*.swp
