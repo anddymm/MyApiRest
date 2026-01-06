@@ -7,14 +7,16 @@ use App\Shared\Infrastructure\Http\SharedRoutes;
 
 header('Content-Type: application/json');
 
-$pdo = DatabaseConnection::getConnection();
+Flight::register('db', 'PDO', [], function() {
+    return DatabaseConnection::getConnection();
+});
 
 $systemController = SharedFactory::createSystemController();
 
 SharedRoutes::register($systemController);
 
 Flight::route('GET /', function() {
-    Flight::json(['message' => 'API Hexagonal']);
+    Flight::json(['message' =>'Welcome World']);
 });
 
 Flight::start();

@@ -1,6 +1,7 @@
 {
     "require": {
-      "mikecao/flight": "^3.17"
+      "mikecao/flight": "^3.17",
+        "robmorgan/phinx": "^0.16.10"
     },
     "autoload": {
       "psr-4": {
@@ -8,4 +9,3 @@
       }
     }
 }
-  
