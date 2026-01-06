@@ -15,4 +15,17 @@ class PdoRoomRepository implements RoomRepository {
         $stmt->execute();
         return $stmt->fetchAll();
     }
+    public function update(int $id, array $data): bool {
+        $fields = "";
+        foreach ($data as $key => $value) {
+            $fields .= "$key = :$key, ";
+        }
+        $fields = rtrim($fields, ", ");
+
+        $sql = "UPDATE rooms SET $fields WHERE id = :id";
+        $data['id'] = $id;
+
+        $stmt = $this->connection->prepare($sql);
+        return $stmt->execute($data);
+    }
 }
