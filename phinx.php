@@ -1,7 +1,6 @@
 <?php
 
-return
-[
+return [
     'paths' => [
         'migrations' => '%%PHINX_CONFIG_DIR%%/db/migrations',
         'seeds' => '%%PHINX_CONFIG_DIR%%/db/seeds'
@@ -9,30 +8,13 @@ return
     'environments' => [
         'default_migration_table' => 'phinxlog',
         'default_environment' => 'development',
-        'production' => [
-            'adapter' => 'mysql',
-            'host' => 'localhost',
-            'name' => 'production_db',
-            'user' => 'root',
-            'pass' => '',
-            'port' => '3306',
-            'charset' => 'utf8',
-        ],
         'development' => [
             'adapter' => 'mysql',
-            'host' => 'localhost',
-            'name' => 'development_db',
-            'user' => 'root',
-            'pass' => '',
-            'port' => '3306',
-            'charset' => 'utf8',
-        ],
-        'testing' => [
-            'adapter' => 'mysql',
-            'host' => 'localhost',
-            'name' => 'testing_db',
-            'user' => 'root',
-            'pass' => '',
+            // Usamos las variables de entorno definidas en docker-compose.yml
+            'host' => getenv('DB_HOST') ?: 'db', 
+            'name' => getenv('DB_NAME') ?: 'flightdb',
+            'user' => getenv('DB_USER') ?: 'root',
+            'pass' => getenv('DB_PASS') ?: 'root',
             'port' => '3306',
             'charset' => 'utf8',
         ]
