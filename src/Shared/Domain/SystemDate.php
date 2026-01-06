@@ -14,7 +14,7 @@ class SystemDate {
         return [
             'date' => $this->isoDate,
             'timezone' => $this->timezone,
-            'status' => 'active'
+            'status' => SystemStatus::OK->value
         ];
     }
 }

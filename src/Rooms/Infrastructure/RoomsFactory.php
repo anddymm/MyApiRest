@@ -8,7 +8,10 @@ use Flight;
 
 class RoomsFactory {
     public static function createController(): RoomController {
-        $repository = new PdoRoomRepository(Flight::db());
+        // Obtenemos la conexión ya establecida con Flight::get
+        $db = Flight::get('db');
+
+        $repository = new PdoRoomRepository($db);
         $useCase = new SearchRoomsUseCase($repository);
         return new RoomController($useCase);
     }

@@ -8,9 +8,7 @@ use App\Rooms\Infrastructure\RoomsFactory;
 
 header('Content-Type: application/json');
 
-Flight::register('db', 'PDO', [], function() {
-    return DatabaseConnection::getConnection();
-});
+Flight::set('db', DatabaseConnection::getConnection());
 // Shared routes
 $systemController = SharedFactory::createSystemController();
 SharedRoutes::register($systemController);

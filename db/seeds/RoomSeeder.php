@@ -1,5 +1,7 @@
 <?php
 use Phinx\Seed\AbstractSeed;
+// Importamos el Enum del dominio de Rooms
+use App\Rooms\Domain\RoomStatus;
 
 class RoomSeeder extends AbstractSeed
 {
@@ -16,7 +18,12 @@ class RoomSeeder extends AbstractSeed
         $roomTypeIds = array_column($roomTypes, 'id');
 
         $data = [];
-        $statuses = ['available', 'maintenance', 'occupied'];
+
+        $statuses = [
+            RoomStatus::AVAILABLE->value,
+            RoomStatus::MAINTENANCE->value,
+            RoomStatus::OCCUPIED->value
+        ];
         
         for ($i = 1; $i <= 15; $i++) {
             $data[] = [
