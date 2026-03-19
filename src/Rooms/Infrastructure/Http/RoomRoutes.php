@@ -7,7 +7,7 @@ class RoomRoutes {
     public static function register(RoomController $controller) {
         Flight::group('/rooms', function() use ($controller) {
             Flight::route('GET /', [$controller, 'list']);
-            
+            Flight::route('GET /view', [$controller, 'view']);
             Flight::route('PATCH /@id:[0-9]+', [$controller, 'update']);
         });
     }

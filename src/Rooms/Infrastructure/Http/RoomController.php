@@ -18,6 +18,12 @@ class RoomController {
         Flight::json($rooms);
     }
 
+    // GET /rooms/view
+    public function view() {
+        header('Content-Type: text/html');
+        readfile(__DIR__ . '/views/rooms.html');
+    }
+
     // PATCH /rooms/@id
     public function update(int $id) {
         $data = Flight::request()->data->getData();

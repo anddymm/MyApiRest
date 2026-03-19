@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Manager — Habitaciones</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, .serif { font-family: 'Playfair Display', serif; }
+        .room-img { background: linear-gradient(135deg, #c9b99a 0%, #a08060 100%); }
+        .room-img.penthouse { background: linear-gradient(135deg, #8b7355 0%, #5c4a32 100%); }
+        .room-img.suite     { background: linear-gradient(135deg, #b8a898 0%, #7a6a58 100%); }
+        .room-img.doble     { background: linear-gradient(135deg, #d4c5b0 0%, #9a8a75 100%); }
+        .room-img.deluxe    { background: linear-gradient(135deg, #a89880 0%, #6a5a45 100%); }
+        .accent { color: #8b6914; }
+        .btn-gold { background-color: #8b6914; color: white; border: none; }
+        .btn-gold:hover { background-color: #6d5210; color: white; }
+        .divider-v { width: 1px; background: #e5e7eb; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div>
+                <p class="text-xs tracking-widest text-gray-400 uppercase">Bienvenido al</p>
+                <h1 class="serif text-xl font-semibold text-gray-800">Hotel Manager</h1>
+            </div>
+            <div class="hidden md:flex items-center gap-8 text-sm text-gray-500">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span id="header-date">Cargando...</span>
+                </div>
+                <div class="divider-v h-6"></div>
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    <span id="header-count">— habitaciones</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-10">
+
+        <!-- Título sección -->
+        <div class="flex items-end justify-between mb-8">
+            <div>
+                <h2 class="serif text-3xl font-semibold text-gray-800">Selecciona tu habitación</h2>
+                <p class="text-gray-400 text-sm mt-1">Consulta disponibilidad y precios por noche</p>
+            </div>
+            <div class="flex gap-2 items-center">
+                <span class="text-xs text-gray-400">Filtrar:</span>
+                <select id="filter-status" class="select select-sm select-bordered text-sm">
+                    <option value="">Todos los estados</option>
+                    <option value="available">Disponible</option>
+                    <option value="occupied">Ocupada</option>
+                    <option value="maintenance">Mantenimiento</option>
+                </select>
+                <select id="filter-type" class="select select-sm select-bordered text-sm">
+                    <option value="">Todos los tipos</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="flex flex-col items-center justify-center py-32 gap-4">
+            <span class="loading loading-spinner loading-lg" style="color:#8b6914"></span>
+            <p class="text-gray-400 text-sm">Cargando habitaciones...</p>
+        </div>
+
+        <!-- Error -->
+        <div id="error" class="hidden alert alert-error">
+            <span>Error al cargar las habitaciones. Por favor, inténtalo de nuevo.</span>
+        </div>
+
+        <!-- Rooms list -->
+        <div id="rooms-list" class="hidden flex flex-col gap-5"></div>
+
+    </main>
+
+    <footer class="border-t border-gray-200 mt-16 py-8 text-center text-xs text-gray-400">
+        Hotel Manager &copy; 2026 — Todos los derechos reservados
+    </footer>
+
+    <script>
+        const typeImages = {
+            'suite':      'suite',
+            'penthouse':  'penthouse',
+            'doble':      'doble',
+            'deluxe':     'deluxe',
+            'individual': '',
+        };
+
+        const statusConfig = {
+            available:   { label: 'Disponible',    cls: 'bg-emerald-100 text-emerald-700',   dot: 'bg-emerald-500' },
+            occupied:    { label: 'Ocupada',        cls: 'bg-red-100 text-red-600',           dot: 'bg-red-500' },
+            maintenance: { label: 'Mantenimiento',  cls: 'bg-amber-100 text-amber-700',       dot: 'bg-amber-500' },
+        };
+
+        let allRooms = [];
+
+        function roomTypeClass(typeName) {
+            const key = typeName?.toLowerCase() ?? '';
+            for (const [k, v] of Object.entries(typeImages)) {
+                if (key.includes(k)) return v;
+            }
+            return '';
+        }
+
+        function renderRooms(rooms) {
+            const list = document.getElementById('rooms-list');
+            if (rooms.length === 0) {
+                list.innerHTML = `<div class="text-center py-20 text-gray-400">No hay habitaciones que coincidan con los filtros.</div>`;
+                return;
+            }
+            list.innerHTML = rooms.map(room => {
+                const s = statusConfig[room.status] ?? { label: room.status, cls: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' };
+                const imgClass = roomTypeClass(room.type_name);
+                const isAvailable = room.status === 'available';
+                return `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col md:flex-row hover:shadow-md transition-shadow">
+                    <!-- Imagen -->
+                    <div class="md:w-72 h-48 md:h-auto flex-shrink-0 relative overflow-hidden">
+                        ${room.image_url
+                            ? `<img src="${room.image_url}" alt="${room.type_name}" class="w-full h-full object-cover">`
+                            : `<div class="room-img ${imgClass} w-full h-full flex items-center justify-center"><span class="text-white/70 text-sm uppercase tracking-widest">${room.type_name}</span></div>`
+                        }
+                        <div class="absolute top-3 left-3">
+                            <span class="text-white text-xs font-semibold tracking-wider bg-black/40 rounded px-2 py-1">Nº ${room.room_number}</span>
+                        </div>
+                    </div>
+
+                    <!-- Contenido -->
+                    <div class="flex flex-col justify-between p-6 flex-1">
+                        <div>
+                            <div class="flex items-start justify-between gap-4 mb-3">
+                                <div>
+                                    <h3 class="serif text-xl font-semibold text-gray-800">Habitación ${room.type_name}</h3>
+                                    <p class="text-gray-400 text-sm mt-0.5">Número ${room.room_number}</p>
+                                </div>
+                                <span class="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${s.cls} whitespace-nowrap">
+                                    <span class="w-1.5 h-1.5 rounded-full ${s.dot}"></span>
+                                    ${s.label}
+                                </span>
+                            </div>
+                            <div class="w-10 h-px bg-amber-700/30 mb-4"></div>
+                            <div class="flex gap-6 text-sm text-gray-500">
+                                <div class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/></svg>
+                                    Categoría ${room.type_name}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-end justify-between mt-6 pt-4 border-t border-gray-100">
+                            <div>
+                                <p class="text-xs text-gray-400 mb-0.5">Precio por noche desde</p>
+                                <p class="text-2xl font-semibold text-gray-800">€${parseFloat(room.base_price).toFixed(2)}<span class="text-sm font-normal text-gray-400">/noche</span></p>
+                            </div>
+                            <button class="btn btn-gold px-6 ${!isAvailable ? 'opacity-40 cursor-not-allowed' : ''}" ${!isAvailable ? 'disabled' : ''}>
+                                ${isAvailable ? 'Reservar' : 'No disponible'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function applyFilters() {
+            const status = document.getElementById('filter-status').value;
+            const type   = document.getElementById('filter-type').value;
+            const filtered = allRooms.filter(r =>
+                (!status || r.status === status) &&
+                (!type   || r.type_name === type)
+            );
+            renderRooms(filtered);
+        }
+
+        async function loadRooms() {
+            try {
+                const [roomsRes, timeRes] = await Promise.all([
+                    fetch('/rooms'),
+                    fetch('/system/time')
+                ]);
+                allRooms = await roomsRes.json();
+                const timeData = await timeRes.json();
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('rooms-list').classList.remove('hidden');
+                document.getElementById('header-count').textContent = `${allRooms.length} habitaciones`;
+
+                if (timeData?.date) {
+                    document.getElementById('header-date').textContent = new Date(timeData.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                } else {
+                    document.getElementById('header-date').textContent = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                }
+
+                // Poblar filtro de tipos
+                const types = [...new Set(allRooms.map(r => r.type_name))].sort();
+                const typeSelect = document.getElementById('filter-type');
+                types.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t; opt.textContent = t;
+                    typeSelect.appendChild(opt);
+                });
+
+                document.getElementById('filter-status').addEventListener('change', applyFilters);
+                document.getElementById('filter-type').addEventListener('change', applyFilters);
+
+                renderRooms(allRooms);
+            } catch {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error').classList.remove('hidden');
+            }
+        }
+
+        loadRooms();
+    </script>
+</body>
+</html>
