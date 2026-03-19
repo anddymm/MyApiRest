@@ -3,12 +3,13 @@ namespace App\Rooms\Infrastructure\Http;
 
 use Flight;
 use App\Rooms\Application\SearchRoomsUseCase;
+use App\Rooms\Application\SearchAvailableRoomsUseCase;
 use App\Rooms\Application\UpdateRoomUseCase;
 
 class RoomController {
-    // Inyectamos ambos casos de uso
     public function __construct(
         private SearchRoomsUseCase $searchUseCase,
+        private SearchAvailableRoomsUseCase $searchAvailableUseCase,
         private UpdateRoomUseCase $updateUseCase
     ) {}
 
@@ -18,10 +19,32 @@ class RoomController {
         Flight::json($rooms);
     }
 
+    // GET /rooms/available
+    public function listAvailable() {
+        $rooms = $this->searchAvailableUseCase->execute();
+        Flight::json($rooms);
+    }
+
     // GET /rooms/view
     public function view() {
+        $rooms = $this->searchUseCase->execute();
+        $this->renderView($rooms, 'Todas las habitaciones');
+    }
+
+    // GET /rooms/available/view
+    public function viewAvailable() {
+        $rooms = $this->searchAvailableUseCase->execute();
+        $this->renderView($rooms, 'Habitaciones disponibles');
+    }
+
+    private function renderView(array $rooms, string $pageTitle): void {
         header('Content-Type: text/html');
-        readfile(__DIR__ . '/views/rooms.html');
+        $template = file_get_contents(__DIR__ . '/views/rooms.html');
+        echo str_replace(
+            ['{{ROOMS_JSON}}', '{{PAGE_TITLE}}', '{{CURRENT_DATE}}'],
+            [json_encode($rooms), $pageTitle, date('d M Y')],
+            $template
+        );
     }
 
     // PATCH /rooms/@id
