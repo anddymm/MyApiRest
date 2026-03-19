@@ -15,6 +15,16 @@ class PdoRoomRepository implements RoomRepository {
         $stmt->execute();
         return $stmt->fetchAll();
     }
+    public function findAvailable(): array {
+        $sql = "SELECT r.id, r.room_number, r.status, r.image_url, rt.name as type_name, rt.base_price
+                FROM rooms r
+                JOIN room_types rt ON r.room_type_id = rt.id
+                WHERE r.status = 'available'";
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     public function update(int $id, array $data): bool {
         $fields = "";
         foreach ($data as $key => $value) {
