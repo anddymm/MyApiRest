@@ -2,39 +2,61 @@
 namespace App\Rooms\Infrastructure\Http;
 
 use Flight;
-use App\Rooms\Application\SearchRoomsUseCase;
-use App\Rooms\Application\SearchAvailableRoomsUseCase;
-use App\Rooms\Application\UpdateRoomUseCase;
+use App\Rooms\Application\Query\SearchRooms\SearchRoomsQuery;
+use App\Rooms\Application\Query\SearchRooms\SearchRoomsQueryHandler;
+use App\Rooms\Application\Query\SearchAvailableRooms\SearchAvailableRoomsQuery;
+use App\Rooms\Application\Query\SearchAvailableRooms\SearchAvailableRoomsQueryHandler;
+use App\Rooms\Application\Command\UpdateRoom\UpdateRoomCommand;
+use App\Rooms\Application\Command\UpdateRoom\UpdateRoomCommandHandler;
 
 class RoomController {
     public function __construct(
-        private SearchRoomsUseCase $searchUseCase,
-        private SearchAvailableRoomsUseCase $searchAvailableUseCase,
-        private UpdateRoomUseCase $updateUseCase
+        private readonly SearchRoomsQueryHandler $searchRoomsHandler,
+        private readonly SearchAvailableRoomsQueryHandler $searchAvailableRoomsHandler,
+        private readonly UpdateRoomCommandHandler $updateRoomHandler,
     ) {}
 
     // GET /rooms
-    public function list() {
-        $rooms = $this->searchUseCase->execute();
+    public function list(): void {
+        $rooms = ($this->searchRoomsHandler)(SearchRoomsQuery::create());
         Flight::json($rooms);
     }
 
     // GET /rooms/available
-    public function listAvailable() {
-        $rooms = $this->searchAvailableUseCase->execute();
+    public function listAvailable(): void {
+        $rooms = ($this->searchAvailableRoomsHandler)(SearchAvailableRoomsQuery::create());
         Flight::json($rooms);
     }
 
     // GET /rooms/view
-    public function view() {
-        $rooms = $this->searchUseCase->execute();
+    public function view(): void {
+        $rooms = ($this->searchRoomsHandler)(SearchRoomsQuery::create());
         $this->renderView($rooms, 'Todas las habitaciones');
     }
 
     // GET /rooms/available/view
-    public function viewAvailable() {
-        $rooms = $this->searchAvailableUseCase->execute();
+    public function viewAvailable(): void {
+        $rooms = ($this->searchAvailableRoomsHandler)(SearchAvailableRoomsQuery::create());
         $this->renderView($rooms, 'Habitaciones disponibles');
+    }
+
+    // PATCH /rooms/@id
+    public function update(int $id): void {
+        $data = Flight::request()->data->getData();
+
+        if (empty($data)) {
+            Flight::halt(400, json_encode(['error' => 'No data provided']));
+        }
+
+        try {
+            ($this->updateRoomHandler)(UpdateRoomCommand::create($id, $data));
+        } catch (\ValueError $e) {
+            Flight::halt(400, json_encode(['error' => 'Invalid field value: ' . $e->getMessage()]));
+        } catch (\RuntimeException $e) {
+            Flight::halt(404, json_encode(['error' => $e->getMessage()]));
+        }
+
+        Flight::json(['message' => 'Room updated successfully']);
     }
 
     private function renderView(array $rooms, string $pageTitle): void {
@@ -45,22 +67,5 @@ class RoomController {
             [json_encode($rooms), $pageTitle, date('d M Y')],
             $template
         );
-    }
-
-    // PATCH /rooms/@id
-    public function update(int $id) {
-        $data = Flight::request()->data->getData();
-        
-        if (empty($data)) {
-            Flight::halt(400, json_encode(['error' => 'No data provided']));
-        }
-
-        $success = $this->updateUseCase->execute($id, $data);
-
-        if (!$success) {
-            Flight::halt(404, json_encode(['error' => 'Room not found or no changes made']));
-        }
-
-        Flight::json(['message' => 'Room updated successfully']);
     }
 }

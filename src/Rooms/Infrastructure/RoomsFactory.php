@@ -1,22 +1,21 @@
 <?php
 namespace App\Rooms\Infrastructure;
 
-use App\Rooms\Infrastructure\Persistence\PdoRoomRepository;
-use App\Rooms\Application\SearchRoomsUseCase;
-use App\Rooms\Application\SearchAvailableRoomsUseCase;
-use App\Rooms\Application\UpdateRoomUseCase;
+use App\Rooms\Infrastructure\Persistence\DoctrineRoomRepository;
+use App\Rooms\Application\Query\SearchRooms\SearchRoomsQueryHandler;
+use App\Rooms\Application\Query\SearchAvailableRooms\SearchAvailableRoomsQueryHandler;
+use App\Rooms\Application\Command\UpdateRoom\UpdateRoomCommandHandler;
 use App\Rooms\Infrastructure\Http\RoomController;
-use Flight;
+use Doctrine\ORM\EntityManager;
 
 class RoomsFactory {
-    public static function createController(): RoomController {
-        $db = Flight::get('db');
-        $repository = new PdoRoomRepository($db);
+    public static function createController(EntityManager $em): RoomController {
+        $repository = new DoctrineRoomRepository($em);
 
-        $searchUseCase          = new SearchRoomsUseCase($repository);
-        $searchAvailableUseCase = new SearchAvailableRoomsUseCase($repository);
-        $updateUseCase          = new UpdateRoomUseCase($repository);
-
-        return new RoomController($searchUseCase, $searchAvailableUseCase, $updateUseCase);
+        return new RoomController(
+            searchRoomsHandler:          new SearchRoomsQueryHandler($repository),
+            searchAvailableRoomsHandler: new SearchAvailableRoomsQueryHandler($repository),
+            updateRoomHandler:           new UpdateRoomCommandHandler($repository),
+        );
     }
 }

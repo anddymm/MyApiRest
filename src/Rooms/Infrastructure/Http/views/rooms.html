@@ -76,9 +76,10 @@
         Hotel Manager &copy; 2026 — Todos los derechos reservados
     </footer>
 
+    <script type="application/json" id="rooms-data">{{ROOMS_JSON}}</script>
     <script>
         // --- Datos inyectados por el servidor ---
-        const rooms = {{ROOMS_JSON}};
+        const rooms = JSON.parse(document.getElementById('rooms-data').textContent);
 
         // --- Lógica de renderizado ---
         const typeImages = {
