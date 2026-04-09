@@ -1,7 +1,9 @@
 <?php
 namespace App\Rooms\Application\Query\SearchRooms;
 
-final class SearchRoomsQuery {
+use App\Shared\Application\Bus\Query\QueryInterface;
+
+final class SearchRoomsQuery implements QueryInterface {
     private function __construct() {}
 
     public static function create(): self {

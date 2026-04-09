@@ -2,6 +2,7 @@
 namespace App\Rooms\Application\Command\UpdateRoom;
 
 use App\Rooms\Domain\RoomRepository;
+use App\Rooms\Domain\Exception\RoomNotFoundException;
 use App\Shared\Application\Bus\Command\CommandHandlerInterface;
 
 final class UpdateRoomCommandHandler implements CommandHandlerInterface {
@@ -11,11 +12,11 @@ final class UpdateRoomCommandHandler implements CommandHandlerInterface {
         $room = $this->repository->findById($command->id);
 
         if ($room === null) {
-            throw new \RuntimeException("Room not found: {$command->id}");
+            throw new RoomNotFoundException($command->id);
         }
 
         if ($command->status !== null) {
-            $room->updateStatus($command->status);
+            $room->changeStatus($command->status);
         }
 
         if ($command->updateImageUrl) {

@@ -3,40 +3,40 @@ namespace App\Rooms\Infrastructure\Http;
 
 use Flight;
 use App\Rooms\Application\Query\SearchRooms\SearchRoomsQuery;
-use App\Rooms\Application\Query\SearchRooms\SearchRoomsQueryHandler;
 use App\Rooms\Application\Query\SearchAvailableRooms\SearchAvailableRoomsQuery;
-use App\Rooms\Application\Query\SearchAvailableRooms\SearchAvailableRoomsQueryHandler;
 use App\Rooms\Application\Command\UpdateRoom\UpdateRoomCommand;
-use App\Rooms\Application\Command\UpdateRoom\UpdateRoomCommandHandler;
+use App\Rooms\Domain\Exception\RoomNotFoundException;
+use App\Rooms\Domain\Exception\InvalidRoomStatusTransitionException;
+use App\Shared\Application\Bus\Command\CommandBus;
+use App\Shared\Application\Bus\Query\QueryBus;
 
 class RoomController {
     public function __construct(
-        private readonly SearchRoomsQueryHandler $searchRoomsHandler,
-        private readonly SearchAvailableRoomsQueryHandler $searchAvailableRoomsHandler,
-        private readonly UpdateRoomCommandHandler $updateRoomHandler,
+        private readonly QueryBus $queryBus,
+        private readonly CommandBus $commandBus,
     ) {}
 
     // GET /rooms
     public function list(): void {
-        $rooms = ($this->searchRoomsHandler)(SearchRoomsQuery::create());
+        $rooms = $this->queryBus->ask(SearchRoomsQuery::create());
         Flight::json($rooms);
     }
 
     // GET /rooms/available
     public function listAvailable(): void {
-        $rooms = ($this->searchAvailableRoomsHandler)(SearchAvailableRoomsQuery::create());
+        $rooms = $this->queryBus->ask(SearchAvailableRoomsQuery::create());
         Flight::json($rooms);
     }
 
     // GET /rooms/view
     public function view(): void {
-        $rooms = ($this->searchRoomsHandler)(SearchRoomsQuery::create());
+        $rooms = $this->queryBus->ask(SearchRoomsQuery::create());
         $this->renderView($rooms, 'Todas las habitaciones');
     }
 
     // GET /rooms/available/view
     public function viewAvailable(): void {
-        $rooms = ($this->searchAvailableRoomsHandler)(SearchAvailableRoomsQuery::create());
+        $rooms = $this->queryBus->ask(SearchAvailableRoomsQuery::create());
         $this->renderView($rooms, 'Habitaciones disponibles');
     }
 
@@ -44,15 +44,14 @@ class RoomController {
     public function update(int $id): void {
         $data = Flight::request()->data->getData();
 
-        if (empty($data)) {
-            Flight::halt(400, json_encode(['error' => 'No data provided']));
-        }
-
         try {
-            ($this->updateRoomHandler)(UpdateRoomCommand::create($id, $data));
-        } catch (\ValueError $e) {
-            Flight::halt(400, json_encode(['error' => 'Invalid field value: ' . $e->getMessage()]));
-        } catch (\RuntimeException $e) {
+            $command = UpdateRoomCommand::create($id, $data);
+            $this->commandBus->dispatch($command);
+        } catch (\InvalidArgumentException $e) {
+            Flight::halt(400, json_encode(['error' => $e->getMessage()]));
+        } catch (InvalidRoomStatusTransitionException $e) {
+            Flight::halt(422, json_encode(['error' => $e->getMessage()]));
+        } catch (RoomNotFoundException $e) {
             Flight::halt(404, json_encode(['error' => $e->getMessage()]));
         }
 

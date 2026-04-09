@@ -10,7 +10,7 @@ class DoctrineEntityManagerFactory {
         $config = ORMSetup::createAttributeMetadataConfiguration(
             paths: [__DIR__ . '/../../../'],
             isDevMode: (getenv('APP_ENV') ?: 'development') !== 'production',
-            proxyDir: sys_get_temp_dir() . '/doctrine-proxies',
+            proxyDir: __DIR__ . '/../../../../var/doctrine/proxies',
         );
 
         $connection = DriverManager::getConnection([

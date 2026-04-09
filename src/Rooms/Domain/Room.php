@@ -1,6 +1,7 @@
 <?php
 namespace App\Rooms\Domain;
 
+use App\Rooms\Domain\Exception\InvalidRoomStatusTransitionException;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -24,6 +25,13 @@ class Room {
     #[ORM\JoinColumn(name: 'room_type_id', referencedColumnName: 'id')]
     private RoomType $roomType;
 
+    // Allowed status transitions: from => [allowed targets]
+    private const ALLOWED_TRANSITIONS = [
+        'available'   => ['occupied', 'maintenance'],
+        'occupied'    => ['available'],
+        'maintenance' => ['available'],
+    ];
+
     public function __construct(
         string $roomNumber,
         RoomStatus $status,
@@ -36,14 +44,24 @@ class Room {
         $this->imageUrl   = $imageUrl;
     }
 
-    public function id(): ?int         { return $this->id; }
-    public function roomNumber(): string { return $this->roomNumber; }
-    public function status(): RoomStatus { return $this->status; }
-    public function imageUrl(): ?string  { return $this->imageUrl; }
-    public function roomType(): RoomType { return $this->roomType; }
+    public function id(): ?int            { return $this->id; }
+    public function roomNumber(): string  { return $this->roomNumber; }
+    public function status(): RoomStatus  { return $this->status; }
+    public function imageUrl(): ?string   { return $this->imageUrl; }
+    public function roomType(): RoomType  { return $this->roomType; }
 
-    public function updateStatus(RoomStatus $status): void {
-        $this->status = $status;
+    public function changeStatus(RoomStatus $newStatus): void {
+        if ($this->status === $newStatus) {
+            return;
+        }
+
+        $allowed = self::ALLOWED_TRANSITIONS[$this->status->value];
+
+        if (!in_array($newStatus->value, $allowed, true)) {
+            throw new InvalidRoomStatusTransitionException($this->id, $this->status, $newStatus);
+        }
+
+        $this->status = $newStatus;
     }
 
     public function updateImageUrl(?string $imageUrl): void {
